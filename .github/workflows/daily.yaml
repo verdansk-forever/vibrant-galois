@@ -1,0 +1,89 @@
+name: Run action
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to run on'
+        type: choice
+        options:
+          - linux
+          - macos
+          - windows
+        required: false
+      linux-image:
+        description: 'Linux image name'
+        type: string
+        default: 'ubuntu-latest'
+        required: false
+      macos-image:
+        description: 'MacOS image name'
+        type: string
+        default: 'macos-latest'
+        required: false
+      windows-image:
+        description: 'Windows image name'
+        type: string
+        default: 'windows-latest'
+        required: false
+
+jobs:
+  linux:
+    if: ${{ inputs.platform == 'linux' }}
+    runs-on: ${{ inputs.linux-image }}
+    steps:
+      - name: Clone repository
+        run: |
+          gh auth setup-git
+          git clone "https://github.com/$GITHUB_REPOSITORY" -b "$GITHUB_REF_NAME" "$GITHUB_WORKSPACE" && cd "$GITHUB_WORKSPACE"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Run the workflow
+        run: sh entrypoint
+        env:
+          A: ${{ secrets.A }}
+          PIERS: ${{ secrets.PIERS }}
+
+  macos:
+    if: ${{ inputs.platform == 'macos' }}
+    runs-on: ${{ inputs.macos-image }}
+    steps:
+      - name: Clone repository
+        run: |
+          gh auth setup-git
+          git clone "https://github.com/$GITHUB_REPOSITORY" -b "$GITHUB_REF_NAME" "$GITHUB_WORKSPACE" && cd "$GITHUB_WORKSPACE"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Run the workflow
+        run: sh entrypoint
+        env:
+          A: ${{ secrets.A }}
+          PIERS: ${{ secrets.PIERS }}
+
+  windows:
+    if: ${{ inputs.platform == 'windows' }}
+    runs-on: ${{ inputs.windows-image }}
+    steps:
+      - name: Clone repository
+        shell: cmd
+        run: |
+          gh auth setup-git
+          git clone "https://github.com/%GITHUB_REPOSITORY%" -b "%GITHUB_REF_NAME%" "%GITHUB_WORKSPACE%"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Run the workflow
+        shell: cmd
+        run: |
+          cd "%GITHUB_WORKSPACE%"
+          C:\\msys64\\usr\\bin\\bash.exe -l -c ' '
+          C:\\msys64\\usr\\bin\\bash -lc 'pacman --noconfirm -Syuu'
+          C:\\msys64\\usr\\bin\\bash -lc 'pacman --noconfirm -Syuu'
+          set CHERE_INVOKING=yes
+          set MSYSTEM=UCRT64
+          C:\\msys64\\usr\\bin\\bash -l entrypoint
+        env:
+          A: ${{ secrets.A }}
+          PIERS: ${{ secrets.PIERS }}
